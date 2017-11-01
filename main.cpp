@@ -14,6 +14,8 @@
 //#include "wire.h"
 #include <util/delay.h>
 #include "USART.h"
+#include "twiSlave.h"
+#include <avr/interrupt.h>
 /********************************************************************************
 Macros and Defines
 ********************************************************************************/
@@ -23,6 +25,7 @@ Macros and Defines
 
 //-----TWI Communication protocol-----
 #define TWI_BUFFER_SIZE 13
+#define SLAVE_ADRS	0x40
 /********************************************************************************
 Function Prototypes
 ********************************************************************************/
@@ -33,13 +36,19 @@ void slavesRespond();
 
 int main(void)
 {
-//unsigned char Mcustatus=MCUSR;
-MCUSR=0x00;
-//-------USART Initializing---------------
-usart_init ( MYUBRR ); // fire up the usart
-usart_putchar('D');
-//sprintf(out_str,"MCU status: %x\n", Mcustatus & 0xff);
-//usart_pstr(out_str);
+	//unsigned char Mcustatus=MCUSR;
+	MCUSR=0x00;
+	//-------USART Initializing---------------
+	usart_init ( MYUBRR ); // fire up the usart
+	usart_putchar('D');
+	//sprintf(out_str,"MCU status: %x\n", Mcustatus & 0xff);
+	//usart_pstr(out_str);
+	
+	//-------IIC Initializing------------------
+	
+	twiSlaveInit( SLAVE_ADRS );		// Initialize TWI hardware for Slave operation.	
+	sei();							// Enable interrupts.
+	twiSlaveEnable();				// Enable the TWI interface to receive data.
     while (1) 
     {
 		//setMotor(20,2);

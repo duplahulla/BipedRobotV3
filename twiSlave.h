@@ -59,8 +59,8 @@
 void	twiSlaveInit( uint8_t adrs );		// Set up TWI hardware and set Slave I2C Address.
 void	twiSlaveEnable( void );				// Enable I2C Slave interface.
 
-void	twiTransmitByte( uint8_t data );	// Place data into output buffer.
-uint8_t	twiReceiveByte( void );				// Read data from input buffer.
+void	twiSetTxBuffer( uint8_t data[] );	// Place data into output buffer.
+uint8_t*	twiGetRxBuffer( void );				// Read data from input buffer.
 bool	twiDataInReceiveBuffer( void );		// Check for available data in input buffer. This function should return TRUE
 											// before calling twiReceiveByte() to get data.
 bool	twiDataInTransmitBuffer( void );	// Check that all prior data has been read.

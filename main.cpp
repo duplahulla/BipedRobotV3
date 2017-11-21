@@ -49,11 +49,16 @@ int main(void)
 	twiSlaveInit( SLAVE_ADRS );		// Initialize TWI hardware for Slave operation.	
 	sei();							// Enable interrupts.
 	twiSlaveEnable();				// Enable the TWI interface to receive data.
+	uint8_t *var=twiGetRxBuffer();
     while (1) 
     {
 		//setMotor(20,2);
-		_delay_ms(10);
-		usart_putchar('K');
+	
+		for(int i=0;i<TWI_RX_BUFFER_SIZE;i++){
+			var[i]=+1;
+		}
+		twiSetTxBuffer(var);
+		//usart_putchar('K');
     }
 }
 

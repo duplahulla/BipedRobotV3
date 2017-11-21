@@ -54,7 +54,7 @@
 #include <avr/interrupt.h>
 
 #include "twiSlave.h"
-
+#include "USART.h"
 void flushTwiBuffers( void );
 
 /* *** Local Defines *** */
@@ -82,10 +82,11 @@ void flushTwiBuffers( void );
 #define	TWI_BUS_ERROR				0x00  // Bus error due to an illegal START or STOP condition
 
 /* *** Local variables *** */
-static uint8_t          rxBuf[ TWI_RX_BUFFER_SIZE ];
+
 static volatile uint8_t rxHead;
 static volatile uint8_t rxTail;
-
+static volatile uint8_t BufPointer;
+static uint8_t          rxBuf[ TWI_RX_BUFFER_SIZE ];
 static uint8_t          txBuf[ TWI_TX_BUFFER_SIZE ];
 static volatile uint8_t txHead;
 static volatile uint8_t txTail;
@@ -100,7 +101,7 @@ flushTwiBuffers( void )
 	rxTail = 0;
 	rxHead = 0;
 	txTail = 0;
-	txHead = 0;
+	txHead = TWI_TX_BUFFER_SIZE-1;
 }
 
 /* *** Public Functions *** */
@@ -137,24 +138,11 @@ twiSlaveEnable( void )
  * NOTE: Could set status flags here also or return a BUFFER_FULL on error.
  */
 void
-twiTransmitByte( uint8_t data )
+twiSetTxBuffer( uint8_t data[])
 {
-	uint8_t tmphead;
-
-	// calculate buffer index
-	tmphead = ( txHead + 1 ) & TWI_TX_BUFFER_MASK;
-
-	// check for free space in buffer
-	if ( tmphead == txTail )
-	{
-		return;
+	for(int i=0;i<TWI_TX_BUFFER_SIZE;i++){
+		txBuf[i]=data[i];
 	}
-
-	// store data into buffer
-	txBuf[ tmphead ] = data;
-
-	// update index
-	txHead = tmphead;
 }
 
 /*
@@ -164,19 +152,11 @@ twiTransmitByte( uint8_t data )
  *
  * Return 0x88 if no data is available. ERROR.
  */
-uint8_t
-twiReceiveByte( void )
+uint8_t*	
+twiGetRxBuffer( void )
 {
-	// check for available data.
-	if ( rxHead == rxTail )
-	{
-		return 0x88;
-	}
-
-	// generate index
-	rxTail = ( rxTail + 1 ) & TWI_RX_BUFFER_MASK;
-
-	return rxBuf[ rxTail ];
+	uint8_t* ret=rxBuf;
+	return ret;
 }
 
 /*
@@ -246,10 +226,14 @@ twiStuffRxBuf( uint8_t data )
  */
 ISR( TWI_vect )
 {
+	//debug
+	usart_putchar(TWSR);
 	switch( TWSR )
 	{
+		
 		case TWI_SRX_ADR_ACK:				// 0x60 Own SLA+W has been received ACK has been returned. Expect to receive data.
 //		case TWI_SRX_ADR_ACK_M_ARB_LOST:	// 0x68 Own SLA+W has been received; ACK has been returned. RESET interface.
+		flushTwiBuffers();
 			TWCR = (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(1<<TWEA);		// Prepare for next event. Should be DATA.
 			break;
 
@@ -267,8 +251,10 @@ ISR( TWI_vect )
 			break;
 
 		case TWI_STX_ADR_ACK:				// 0xA8 Own SLA+R has been received; ACK has been returned. Load DATA.
+		flushTwiBuffers();
 //		case TWI_STX_ADR_ACK_M_ARB_LOST:	// 0xB0 Own SLA+R has been received; ACK has been returned
 		case TWI_STX_DATA_ACK:				// 0xB8 Data byte in TWDR has been transmitted; ACK has been received. Load DATA.
+			
 			if ( txHead != txTail )
 			{
 				txTail = ( txTail + 1 ) & TWI_TX_BUFFER_MASK;

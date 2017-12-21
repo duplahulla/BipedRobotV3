@@ -14,6 +14,10 @@
 //#include "wire.h"
 #include <util/delay.h>
 #include "USART.h"
+<<<<<<< HEAD
+=======
+#include "twiSlave.h"
+>>>>>>> IIC_implementation
 #include <avr/interrupt.h>
 /********************************************************************************
 Macros and Defines
@@ -27,6 +31,7 @@ Macros and Defines
 #define ADC_B_Psense 0x03
 //-----TWI Communication protocol-----
 #define TWI_BUFFER_SIZE 13
+#define SLAVE_ADRS	0x40
 /********************************************************************************
 Function Prototypes
 ********************************************************************************/
@@ -37,6 +42,7 @@ void slavesRespond();
 uint8_t measurementBuffer[8];
 int main(void)
 {
+<<<<<<< HEAD
 
 	//-------PWM setup-----------------
 	//Timer0
@@ -90,6 +96,30 @@ MCUSR=0x00;
     {
 		//setMotor(20,2);
 		_delay_ms(10);
+=======
+	//unsigned char Mcustatus=MCUSR;
+	MCUSR=0x00;
+	//-------USART Initializing---------------
+	usart_init ( MYUBRR ); // fire up the usart
+	usart_putchar('D');
+	//sprintf(out_str,"MCU status: %x\n", Mcustatus & 0xff);
+	//usart_pstr(out_str);
+	
+	//-------IIC Initializing------------------
+	
+	twiSlaveInit( SLAVE_ADRS );		// Initialize TWI hardware for Slave operation.	
+	sei();							// Enable interrupts.
+	twiSlaveEnable();				// Enable the TWI interface to receive data.
+	uint8_t *var=twiGetRxBuffer();
+    while (1) 
+    {
+		//setMotor(20,2);
+	
+		for(int i=0;i<TWI_RX_BUFFER_SIZE;i++){
+			var[i]=+1;
+		}
+		twiSetTxBuffer(var);
+>>>>>>> IIC_implementation
 		//usart_putchar('K');
     }
 }

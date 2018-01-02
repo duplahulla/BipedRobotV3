@@ -14,10 +14,7 @@
 //#include "wire.h"
 #include <util/delay.h>
 #include "USART.h"
-<<<<<<< HEAD
-=======
 #include "twiSlave.h"
->>>>>>> IIC_implementation
 #include <avr/interrupt.h>
 /********************************************************************************
 Macros and Defines
@@ -40,9 +37,7 @@ void receiveCommand(int howMany);
 void slavesRespond();
 //-------Global variables-----------------
 uint8_t measurementBuffer[8];
-int main(void)
-{
-<<<<<<< HEAD
+int main(void){
 
 	//-------PWM setup-----------------
 	//Timer0
@@ -86,19 +81,6 @@ int main(void)
 	sei();
 //unsigned char Mcustatus=MCUSR;
 MCUSR=0x00;
-
-//-------USART Initializing---------------
-//usart_init ( MYUBRR ); // fire up the usart
-//usart_putchar('D');
-//sprintf(out_str,"MCU status: %x\n", Mcustatus & 0xff);
-//usart_pstr(out_str);
-    while (1) 
-    {
-		//setMotor(20,2);
-		_delay_ms(10);
-=======
-	//unsigned char Mcustatus=MCUSR;
-	MCUSR=0x00;
 	//-------USART Initializing---------------
 	usart_init ( MYUBRR ); // fire up the usart
 	usart_putchar('D');
@@ -108,18 +90,13 @@ MCUSR=0x00;
 	//-------IIC Initializing------------------
 	
 	twiSlaveInit( SLAVE_ADRS );		// Initialize TWI hardware for Slave operation.	
-	sei();							// Enable interrupts.
+	sei(); 				// Enable interrupts.
 	twiSlaveEnable();				// Enable the TWI interface to receive data.
 	uint8_t *var=twiGetRxBuffer();
     while (1) 
     {
 		//setMotor(20,2);
-	
-		for(int i=0;i<TWI_RX_BUFFER_SIZE;i++){
-			var[i]=+1;
-		}
-		twiSetTxBuffer(var);
->>>>>>> IIC_implementation
+		
 		//usart_putchar('K');
     }
 }
@@ -159,7 +136,7 @@ ISR(ADC_vect){
 		 ADCSRA |= (1<<ADATE);					//Enable auto trigger
 		 ADCSRB |= (1<<ADTS1);
 		 ADCSRB |= (1<<ADTS2);					//Timer/Counter1 Overflow trigger
-		 
+		 twiSetTxBuffer(measurementBuffer);
 		 break;
 	}
 	//usart_pstr("ADC /n");

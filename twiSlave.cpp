@@ -113,7 +113,7 @@ flushTwiBuffers( void )
 void
 twiSlaveInit( uint8_t adrs )
 {
-	TWAR = (adrs << 1)|(0);
+	TWAR = (adrs << 1);
 	
 	TWCR = (1<<TWEN)|(0<<TWIE)|(0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC);
 	return;

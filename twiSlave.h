@@ -39,14 +39,14 @@
 /* *** Buffer defines *** */
 // allowed buffer sizes: 2^n up to 256 bytes
 
-#define TWI_RX_BUFFER_SIZE  ( 32 )
+#define TWI_RX_BUFFER_SIZE  ( 8 )
 #define TWI_RX_BUFFER_MASK  ( TWI_RX_BUFFER_SIZE - 1 )
 
 #if ( TWI_RX_BUFFER_SIZE & TWI_RX_BUFFER_MASK )
 #  error TWI_RX_BUFFER_SIZE is not a power of 2
 #endif
 
-#define TWI_TX_BUFFER_SIZE ( 32 )
+#define TWI_TX_BUFFER_SIZE ( 8 )
 #define TWI_TX_BUFFER_MASK ( TWI_TX_BUFFER_SIZE - 1 )
 
 #if ( TWI_TX_BUFFER_SIZE & TWI_TX_BUFFER_MASK )

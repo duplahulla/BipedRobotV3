@@ -22,15 +22,17 @@ Macros and Defines
 
 #define BAUD 115200
 #define MYUBRR F_CPU/16/BAUD-1
-#define ADC_A_Isense 0x00
+//A and B channel current sense ADC channel switched up because of design error
+#define ADC_A_Isense 0x01
 #define ADC_A_Psense 0x02
-#define ADC_B_Isense 0x01
+#define ADC_B_Isense 0x00
 #define ADC_B_Psense 0x03
 
 #define I2C_A_Psense_address 0x00
 #define I2C_B_Psense_address 0x02
 #define I2C_A_Isense_address 0x04
 #define I2C_B_Isense_address 0x06
+#define 
 
 //-----TWI Communication protocol-----
 #define SLAVE_ADRS	0x40
@@ -41,7 +43,6 @@ void setMotor(const float &value,const int &motor);
 void receiveCommand(int howMany);
 void slavesRespond();
 //-------Global variables-----------------
-uint8_t measurementBuffer[8];
 int main(void){
 
 	//-------PWM setup-----------------
@@ -108,12 +109,11 @@ MCUSR=0x00;
 
 ISR(ADC_vect){
 	switch(ADMUX){
-	
 		 case ADC_A_Isense :
 			 I2C_writeRegister(I2C_A_Isense_address,ADCL,ADCH);
 			 ADMUX=ADC_A_Psense;
 			 ADCSRA &= ~(1<<ADATE);					//Disable auto trigger
-			 ADCSRA |= (1<<ADSC);
+			 ADCSRA |= (1<<ADSC);					//Start ADC right now
 		 break;
 		 case ADC_A_Psense :
 			 I2C_writeRegister(I2C_A_Psense_address,ADCL,ADCH);
@@ -126,7 +126,7 @@ ISR(ADC_vect){
 			 I2C_writeRegister(I2C_B_Isense_address,ADCL,ADCH);
 			 ADMUX=ADC_B_Psense;
 			 ADCSRA &= ~(1<<ADATE);					//Disable auto trigger
-			 ADCSRA |= (1<<ADSC);
+			 ADCSRA |= (1<<ADSC);					//Start ADC right now
 		 break;
 		 case ADC_B_Psense :
 			 I2C_writeRegister(I2C_B_Psense_address,ADCL,ADCH);

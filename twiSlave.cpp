@@ -29,24 +29,45 @@ volatile uint8_t rxbuffer[0xFF];
 #define	TWI_NO_STATE				0xF8  // No relevant state information available; TWINT = 0
 #define	TWI_BUS_ERROR				0x00  // Bus error due to an illegal START or STOP condition
 
+typedef union
+{
+	unsigned short u16;
+	unsigned char u8[2];
+} U16_U8;
+
 void I2C_init(uint8_t address){
+	txbuffer[1]=12;
+	txbuffer[2]=12;
+	txbuffer[3]=12;
+	txbuffer[4]=12;
+	txbuffer[5]=12;
+	txbuffer[6]=12;
+	txbuffer[7]=12;
+	txbuffer[0]=12;
 	// load address into TWI address register
 	TWAR = (address << 1);
 	// set the TWCR to enable address matching and enable TWI, clear TWINT, enable TWI interrupt
 	TWCR = (1<<TWIE) | (1<<TWEA) | (1<<TWINT) | (1<<TWEN);
+	
 }
 
 void I2C_stop(void){
 	// clear acknowledge and enable bits
 	TWCR &= ~( (1<<TWEA) | (1<<TWEN) );
 }
-void I2C_writeRegister(uint8_t address,uint8_t dataL, uint8_t dataH){
-	//if(address<(0xFF-1)){
-	txbuffer[11]=dataL;
-	txbuffer[11+1]=dataH;
-	//}
+void I2C_writeTxBuffer16Bit(uint8_t address, uint8_t dataH, uint8_t dataL){
+	txbuffer[address]=dataH;
+	txbuffer[address+1]=dataL;
 }
-
+uint16_t I2C_readRxBuffer16Bit(uint8_t address){
+	U16_U8 buf;
+	buf.u8[0]=rxbuffer[address];
+	buf.u8[1]=rxbuffer[address+1];
+	return buf.u16;
+}
+uint8_t I2C_readRxBuffer8Bit(uint8_t address){
+	return rxbuffer[address];
+}
 
 ISR( TWI_vect )
 {

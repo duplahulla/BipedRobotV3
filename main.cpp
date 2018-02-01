@@ -16,6 +16,7 @@
 #include "USART.h"
 #include "twiSlave.h"
 #include <avr/interrupt.h>
+#include <avr/eeprom.h>
 /********************************************************************************
 Macros and Defines
 ********************************************************************************/
@@ -43,15 +44,16 @@ void StopMotorB();
 
 typedef union
 {
-	unsigned short u16;
+	short i16;
 	unsigned char u8[2];
-} U16_U8;
+} I16_U8;
 
 //-------Global variables-----------------
 volatile bool ADCFlag= false;			//true if ADC data needs to be processed		
 volatile uint8_t ADCDataH=0;
 volatile uint8_t ADCDataL=0;
 volatile uint8_t ADMUXState=0;
+const uint8_t* SlaveEEAddressPointer=(uint8_t *)(0x00);
 
 int main(void){
 
@@ -62,7 +64,7 @@ int main(void){
 	DDRD |= (1 << DDD5);										// PD5-6 as output
 	DDRD |= (1 << DDD6);
 	OCR0A = 0xFF;
-	OCR0B = 0xFF-5;
+	OCR0B = 0xFF-50;
 	TCCR0A |= (1<<COM0A1);										// Set non inverting mode
 	TCCR0A |= (1<<COM0B1);
 	TCCR0A |= (1 << WGM02) | (1 << WGM00);						// 10 bit phase corriged PWM mode
@@ -74,25 +76,29 @@ int main(void){
 	DDRB |= (1 << DDB1);										// PB1-2 as output
 	DDRB |= (1 << DDB2);
 	OCR1A = 0xFF;
-	OCR1B = 0xFF-5;
+	OCR1B = 0xFF-50;
 	TCNT1=0xFF;													// set phase shift relative to Timer 0
 	TCCR1A |= (1 << COM1A1);									// Non inverting mode
 	TCCR1A |= (1 << COM1B1);
 	TCCR1A |= (1 << WGM10);										// 8 bit phase corriged PWM mode
     TIMSK1 |= (1 << TOIE1);										// Overflow interrupt enable
-	TCCR0B |= (1 << CS11)|(1 << CS10);						// Set prescaler to 8 and start PWM on timer0
-	TCCR1B |= (1 << CS11)|(1 << CS10);						// Set prescaler to 8 and start PWM on timer1
+	TCCR0B |= (1 << CS11);//|(1 << CS10);						// Set prescaler to 8 and start PWM on timer0
+	TCCR1B |= (1 << CS11);//|(1 << CS10);						// Set prescaler to 8 and start PWM on timer1
 
 	//-------IIC Initializing------------------
+	
+	uint8_t SlaveAddress=0x08;
+	eeprom_busy_wait();
+	SlaveAddress=eeprom_read_byte(SlaveEEAddressPointer);
 	sei(); 				// Enable interrupts.
-	I2C_init( SLAVE_ADRS );		// Initialize TWI hardware for Slave operation.
+	I2C_init( SlaveAddress );		// Initialize TWI hardware for Slave operation.
 	
 	//-------ADC setup-----------------
 	ADMUX=0x00;
 	ADCSRA |= (1<<ADATE);					//Enable auto triggering
 	ADCSRB |= (1<<ADTS2);					//Timer/Counter0 Overflow trigger
 	ADCSRA |= (1<<ADEN);					// ADEN: Set to turn on ADC , by default it is turned off
-	ADCSRA |= (1<<ADPS2)| (1<<ADPS1)| (1<<ADPS0);		//set to make division factor 128
+	ADCSRA |= (1<<ADPS2)| (1<<ADPS1);//| (1<<ADPS0);		//set to make division factor 128
 	ADCSRA |= (1<<ADIE);					//ADIE: Interrupt enable
 	//sei();
 unsigned char Mcustatus=MCUSR;
@@ -104,6 +110,8 @@ MCUSR=0x00;
 	//usart_pstr(out_str);
 
 	DDRD |= (1 << DDD1);
+	//StopMotorA();
+	StopMotorB();
     while (1) 
     {
 		if(ADCFlag){
@@ -111,8 +119,8 @@ MCUSR=0x00;
 switch(ADMUXState){
 	case ADC_A_Isense :
 	I2C_writeTxBuffer16Bit(I2C_Tx_A_Isense_address,ADCH, ADCL);
-	ADMUX=ADC_A_Psense;
 	ADCSRA &= ~(1<<ADATE);					//Disable auto trigger
+	ADMUX=ADC_A_Psense;
 	ADCSRA |= (1<<ADSC);					//Start ADC right now
 	break;
 	case ADC_A_Psense :
@@ -155,6 +163,15 @@ switch(ADMUXState){
 			//handling internal process
 			
 			
+		}
+		if(I2C_gotMessage()){
+			int16_t value=I2C_readRxBuffer16Bit(0x01);
+			if(value>0 && value<255){
+				OCR1B = 0xFF-value;
+			}
+			I16_U8 converter;
+			converter.i16=value;
+			//I2C_writeTxBuffer16Bit(I2C_Tx_A_Psense_address,converter.u8[1], converter.u8[0]);
 		}
 _delay_us(1);
 PORTD &=~(1<<PIND1);

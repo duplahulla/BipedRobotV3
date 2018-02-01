@@ -7,6 +7,7 @@
 volatile uint8_t buffer_address;
 volatile uint8_t txbuffer[0xFF];
 volatile uint8_t rxbuffer[0xFF];
+volatile bool ReceivedMessage=false;
 // TWI Slave Receiver status codes
 #define	TWI_SRX_ADR_ACK				0x60  // Own SLA+W has been received ACK has been returned
 #define	TWI_SRX_ADR_ACK_M_ARB_LOST	0x68  // Own SLA+W has been received; ACK has been returned
@@ -31,9 +32,9 @@ volatile uint8_t rxbuffer[0xFF];
 
 typedef union
 {
-	unsigned short u16;
+	 short i16;
 	unsigned char u8[2];
-} U16_U8;
+} I16_U8;
 
 void I2C_init(uint8_t address){
 	txbuffer[1]=12;
@@ -59,16 +60,20 @@ void I2C_writeTxBuffer16Bit(uint8_t address, uint8_t dataH, uint8_t dataL){
 	txbuffer[address]=dataH;
 	txbuffer[address+1]=dataL;
 }
-uint16_t I2C_readRxBuffer16Bit(uint8_t address){
-	U16_U8 buf;
-	buf.u8[0]=rxbuffer[address];
-	buf.u8[1]=rxbuffer[address+1];
-	return buf.u16;
+int16_t I2C_readRxBuffer16Bit(uint8_t address){
+	I16_U8 buf;
+	buf.u8[1]=rxbuffer[address];
+	buf.u8[0]=rxbuffer[address+1];
+	return buf.i16;
 }
 uint8_t I2C_readRxBuffer8Bit(uint8_t address){
 	return rxbuffer[address];
 }
-
+bool I2C_gotMessage(){
+	bool temp=ReceivedMessage;
+	ReceivedMessage=false;
+	return temp;
+}
 ISR( TWI_vect )
 {
 		
@@ -82,6 +87,9 @@ ISR( TWI_vect )
 			// received data from master, call the receive callback
 			rxbuffer[buffer_address]=TWDR;
 			buffer_address++;
+			if(buffer_address==5){
+				ReceivedMessage=true;
+			}
 			TWCR = (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
 			break;
 			case TW_ST_SLA_ACK:
